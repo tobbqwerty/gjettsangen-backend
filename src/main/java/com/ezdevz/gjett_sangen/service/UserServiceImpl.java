@@ -14,46 +14,54 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 
 @Service
-public class UserServiceImpl {
+public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
 
-    private final PasswordEncoder passwordEncoder;
+   // private final PasswordEncoder passwordEncoder;
 
     @Autowired
-    public UserServiceImpl(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+    public UserServiceImpl(UserRepository userRepository) {
         this.userRepository = userRepository;
-        this.passwordEncoder = passwordEncoder;
+        //this.passwordEncoder = passwordEncoder;
     }
 
+    @Override
     public List<User> getAllUsers() {
         return userRepository.findAll();
     }
 
+    @Override
     public User getUserById(@NonNull Long id) {
         return userRepository.findById(id).orElseThrow(() -> new UsernameNotFoundException("User not found with id: " + id));
     }
 
+    @Override
     public User getUserByEmail(@NonNull String email) {
         return userRepository.findByEmail(email).orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + email));
     }
 
+    @Override
     public User getUserByUsername(@NonNull String username) {
         return userRepository.findByUsername(username).orElseThrow(() -> new UsernameNotFoundException("User not found with username: " + username));
     }
 
+    @Override
     public boolean emailExists(String email) {
         return userRepository.findByEmail(email).isPresent();
     }
 
+    @Override
     public boolean usernameExists(String username) {
         return userRepository.findByUsername(username).isPresent();
     }
 
+    @Override
     public User saveUser(User user) {
        return userRepository.save(user);
     }
 
+    @Override
     public User registerUser(RegisterDto register) throws Exception {
         if (usernameExists(register.getUsername())) {
             throw new Exception("Username already in use!");
@@ -73,10 +81,12 @@ public class UserServiceImpl {
         return saveUser(user);
     }
 
+    @Override
     public void deleteUser(User user) {
         userRepository.delete(user);
     }
 
+    @Override
     public void deleteUserById(Long id) {
         if (!userRepository.existsById(id)) {
             throw new UsernameNotFoundException("User not found with id: " + id);
