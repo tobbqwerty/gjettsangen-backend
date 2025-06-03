@@ -1,5 +1,6 @@
 package com.ezdevz.gjett_sangen.controller;
 
+import com.ezdevz.gjett_sangen.dto.RegisterDto;
 import com.ezdevz.gjett_sangen.dto.UserDto;
 import com.ezdevz.gjett_sangen.mapper.UserMapper;
 import com.ezdevz.gjett_sangen.model.User;
@@ -8,10 +9,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
 import java.util.List;
 
 @RestController
@@ -36,7 +35,7 @@ public class UserController {
     }
 
     @GetMapping(value = "/username/{username}", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<UserDto> getUserbyUsername(@RequestParam String username) {
+    public ResponseEntity<UserDto> getUserbyUsername(@PathVariable String username) {
         LOGGER.info("GET request for user with username: " + username);
         User user = userService.getUserByUsername(username);
         UserDto userDto = UserMapper.toDTO(user);
@@ -45,7 +44,7 @@ public class UserController {
     }
 
     @GetMapping(value = "/email/{email}", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<UserDto> getUserbyEmail(@RequestParam String email) {
+    public ResponseEntity<UserDto> getUserbyEmail(@PathVariable String email) {
         LOGGER.info("GET request for user with email: " + email);
         User user = userService.getUserByEmail(email);
         UserDto userDto = UserMapper.toDTO(user);
@@ -54,13 +53,11 @@ public class UserController {
     }
 
     @GetMapping(value = "/id/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<UserDto> getUserbyId(@RequestParam Long id) {
+    public ResponseEntity<UserDto> getUserbyId(@PathVariable Long id) {
         LOGGER.info("GET request for user with id: " + id);
         User user = userService.getUserById(id);
         UserDto userDto = UserMapper.toDTO(user);
         LOGGER.info("Mapped user to userDTO: {}", userDto);
         return ResponseEntity.ok(userDto);
     }
-
-
 }
