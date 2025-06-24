@@ -1,10 +1,7 @@
 package com.ezdevz.gjett_sangen.controller;
 
 import com.ezdevz.gjett_sangen.auth.JwtService;
-import com.ezdevz.gjett_sangen.dto.ForgotPasswordDto;
-import com.ezdevz.gjett_sangen.dto.LoginDto;
-import com.ezdevz.gjett_sangen.dto.RegisterDto;
-import com.ezdevz.gjett_sangen.dto.UserDto;
+import com.ezdevz.gjett_sangen.dto.*;
 import com.ezdevz.gjett_sangen.mapper.UserMapper;
 import com.ezdevz.gjett_sangen.model.User;
 import com.ezdevz.gjett_sangen.service.UserService;
@@ -16,6 +13,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -131,6 +130,52 @@ public class UserController {
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
+    @GetMapping("/profile")
+    public ResponseEntity<Map<String, UserDto>> getProfile() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String username = authentication.getName();
+
+        User user = userService.getUserByUsername(username);
+        UserDto userDTO = UserMapper.toDTO(user);
+        LOGGER.info("Mapped user to userDTO: {}", userDTO);
+        return ResponseEntity.ok(Map.of("user", userDTO));
+    }
+
+    @PatchMapping("/profile")
+    public ResponseEntity<Map<String,Object>> updateUser(@RequestBody UpdateUserDto updateUserDTO) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String email = authentication.getName();
+
+        LOGGER.info("PATCH request for profile update from user: {}", email);
+
+        User user = userService.getUserByEmail(email);
+
+        boolean emailChangeRequested = updateUserDTO.getEmail() != null &&
+                !updateUserDTO.getEmail().equals(email);
+
+        User updatedUser = userService.updateUser(user, updateUserDTO);
+        UserDto userDTO = UserMapper.toDTO(updatedUser);
+        LOGGER.info("Mapped user to userDTO: {}", userDTO);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("user", userDTO);
+
+        if (emailChangeRequested) {
+            String token = jwtService.generateToken(updatedUser);
+
+            response.put("emailChanged", true);
+            response.put("token", token);
+            response.put("message", "Email updated successfully. Please log in with your new email.");
+        } else {
+            response.put("message", "Profile updated successfully");
+        }
+
+        LOGGER.info("Profile updated successfully for user: {}", updatedUser.getEmail());
+        return ResponseEntity.ok(response);
+
+    }
+
+
     @PostMapping(value = "/users/reset")
     public ResponseEntity<?> resetPassword(@RequestBody ForgotPasswordDto forgotPassword) {
 
@@ -138,7 +183,7 @@ public class UserController {
         return ResponseEntity.ok().build();
     }
 
-    @PostMapping(value = "/users/reset")
+    @PostMapping(value = "/users/resetPassword")
     public ResponseEntity<?> newPassword(@RequestBody String newPassword) {
 
         return ResponseEntity.ok().build();

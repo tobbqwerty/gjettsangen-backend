@@ -2,14 +2,17 @@ package com.ezdevz.gjett_sangen.service;
 
 
 import com.ezdevz.gjett_sangen.dto.RegisterDto;
+import com.ezdevz.gjett_sangen.dto.UpdateUserDto;
 import com.ezdevz.gjett_sangen.model.Role;
 import com.ezdevz.gjett_sangen.model.User;
 import com.ezdevz.gjett_sangen.repository.UserRepository;
 import lombok.NonNull;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -80,6 +83,72 @@ public class UserServiceImpl implements UserService {
 
         return saveUser(user);
     }
+
+    @Override
+    public User updateUser(User user, UpdateUserDto update) {
+        boolean emailChange = update.getEmail() != null &&
+                !update.getEmail().equals(user.getEmail());
+
+        if (emailChange && (update.getOldPassword() == null || update.getOldPassword().isBlank())) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Please enter your password to change your email."
+            );
+        }
+
+        if (emailChange && !passwordEncoder.matches(update.getOldPassword(), user.getPassword())) {
+            throw new ResponseStatusException(
+                    HttpStatus.UNAUTHORIZED,
+                    "Current password is incorrect."
+            );
+        }
+
+        if (emailChange && emailExists(update.getEmail().trim())) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Email already in use."
+            );
+        }
+
+        if (emailChange) {
+            user.setEmail(update.getEmail().trim());
+        }
+
+        if (update.getUsername() != null && !update.getUsername().equals(user.getUsername())) {
+            if (usernameExists(update.getUsername())) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT, "Username already in use.");
+            }
+            user.setUsername(update.getUsername());
+        }
+
+        if (update.getFirstName() != null && !update.getFirstName().equals(user.getFirstName())) {
+            user.setFirstName(update.getFirstName());
+        }
+
+        if (update.getLastName() != null && !update.getLastName().equals(user.getLastName())) {
+            user.setLastName(update.getLastName());
+        }
+
+        if (update.getNewPassword() != null) {
+            if (!passwordEncoder.matches(update.getOldPassword(), user.getPassword())) {
+                throw new ResponseStatusException(
+                        HttpStatus.UNAUTHORIZED,
+                        "Current password is incorrect."
+                );
+            }
+            if (update.getNewPassword().isBlank()) {
+                throw new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST,
+                        "New password cannot be empty."
+                );
+            }
+            user.setPassword(passwordEncoder.encode(update.getNewPassword().trim()));
+        }
+
+        return userRepository.save(user);
+    }
+
+
 
     @Override
     public void deleteUser(User user) {
