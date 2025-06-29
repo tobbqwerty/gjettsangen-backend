@@ -124,7 +124,7 @@ public class UserController {
 
         Map<String, Object> response = new HashMap<>();
         response.put("user", savedUserDto);
-       response.put("token", token);
+        response.put("token", token);
         response.put("role", savedUser.getRole());
 
         return new ResponseEntity<>(response, HttpStatus.CREATED);
@@ -144,37 +144,23 @@ public class UserController {
     @PatchMapping("/profile")
     public ResponseEntity<Map<String,Object>> updateUser(@RequestBody UpdateUserDto updateUserDTO) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String email = authentication.getName();
+        String username = authentication.getName();
 
-        LOGGER.info("PATCH request for profile update from user: {}", email);
+        LOGGER.info("PATCH request for profile update from user: {}", username);
 
-        User user = userService.getUserByEmail(email);
-
-        boolean emailChangeRequested = updateUserDTO.getEmail() != null &&
-                !updateUserDTO.getEmail().equals(email);
+        User user = userService.getUserByUsername(username);
 
         User updatedUser = userService.updateUser(user, updateUserDTO);
         UserDto userDTO = UserMapper.toDTO(updatedUser);
         LOGGER.info("Mapped user to userDTO: {}", userDTO);
 
         Map<String, Object> response = new HashMap<>();
-        response.put("user", userDTO);
-
-        if (emailChangeRequested) {
-            String token = jwtService.generateToken(updatedUser);
-
-            response.put("emailChanged", true);
-            response.put("token", token);
-            response.put("message", "Email updated successfully. Please log in with your new email.");
-        } else {
-            response.put("message", "Profile updated successfully");
-        }
+        response.put("username", userDTO);
 
         LOGGER.info("Profile updated successfully for user: {}", updatedUser.getEmail());
         return ResponseEntity.ok(response);
 
     }
-
 
     @PostMapping(value = "/users/reset")
     public ResponseEntity<?> resetPassword(@RequestBody ForgotPasswordDto forgotPassword) {
